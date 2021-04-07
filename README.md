@@ -48,3 +48,13 @@ Course Instructor: Arash Saifhashemi
   sudo apt update
   sudo apt install libglu1-mesa-dev
   ```
+  
+  ## Output Preview
+  
+  ### Automobile path planning using Dijkstra Algorithm
+
+![](/home/haoxin/code/Picture1.png)
+
+### Helicopter path planning (TSP) using brute-force backtracking 
+
+![](/home/haoxin/code/Picture2.png)
