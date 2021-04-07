@@ -183,44 +183,66 @@ void TrojanMap::TravellingTrojan_(vector<string> &ids, vector<vector<string>> &p
   }
 }
 
-vector<string> TrojanMap::CalculateShortestPath_Dijkstra(string location1_name, string location2_name) {
-  vector<string> path;
-  unordered_map<string, double> dis(data.size());  // <ID, distance>
+/**
+ * CalculateShortestPath_Dijkstra: Given 2 locations, return the shortest path which is a
+ * list of id.
+ *
+ * @param  {string} location1_name            : start
+ * @param  {string} location2_name            : goal
+ * @return {pair<double, vector<string>>}     : a pair of total distance and the all the progress to get final path
+ */
+pair<double, vector<string>> TrojanMap::CalculateShortestPath_Dijkstra(string location1_name, string location2_name) {
+  unordered_set<string> visited;
+  unordered_map<string, pair<string, double>> dis(data.size());  // distance map: <ID, <predecessor ID, distance>
+
   string id1 = GetID(location1_name), id2 = GetID(location2_name);
 
   // initialization
   for (auto &pr : data) {
-    dis[pr.first] = DBL_MAX;
+    dis[pr.first] = make_pair("", DBL_MAX);
   }
-
-  // update with the distance to the neighbors of id1
+  dis[id1] = make_pair("", 0);
   for (auto &id : data[id1].neighbors) {
-    dis[id] = CalculateDistance(data[id1], data[id]);
+    dis[id] = make_pair(id1, CalculateDistance(data[id1], data[id]));
   }
+  visited.insert(id1);
 
-  path.push_back(id1);
-
-  while (path.size() < data.size()) {
+  string p_id, u_id;
+  while (visited.size() < data.size()) {
     double min_dis = DBL_MAX * 0.9;
 
     // find an unvisited neighbor with min distance
-    string u;
     for (auto &pr : dis) {
-      auto a = find(path.begin(), path.end(), pr.first);
-      if (path.end() == a) {  // this is unvisited
-        if (pr.second < min_dis) {
-          min_dis = pr.second;
-          u = pr.first;
+      if (visited.end() == find(visited.begin(), visited.end(), pr.first)) {  // this is unvisited
+        if (pr.second.second < min_dis) {
+          p_id = pr.second.first;
+          min_dis = pr.second.second;
+          u_id = pr.first;
         }
       }
     }
-    path.push_back(u);
-    if (u == id2) break;  // the destination has been found
+    visited.insert(u_id);
+
+    // if the destination has been found
+    if (u_id == id2) {
+      break;
+    }
 
     // update with the distance to the neighbors of u
-    for (auto &id : data[u].neighbors) {
-      dis[id] = min(dis[id], min_dis + CalculateDistance(data[u], data[id]));
+    for (auto &id : data[u_id].neighbors) {
+      double new_dis = min_dis + CalculateDistance(data[u_id], data[id]);
+      if (new_dis < dis[id].second) {
+        dis[id] = make_pair(u_id, new_dis);
+      }
     }
   }
-  return path;
+  vector<string> path;
+  if (visited.size() == data.size()) return make_pair(-1, path);
+  u_id = id2;
+  while (u_id != "") {
+    path.push_back(u_id);
+    u_id = dis[u_id].first;
+  }
+  reverse(path.begin(), path.end());
+  return make_pair(dis[id2].second, path);
 }

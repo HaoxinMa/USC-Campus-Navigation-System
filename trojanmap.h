@@ -39,7 +39,7 @@ class TrojanMap {
   double CalculateDistance(const Node &a, const Node &b);
   double CalculatePathLength(const vector<string> &path);
   pair<double, vector<vector<string>>> TravellingTrojan(vector<string> &location_ids);
-  vector<string> CalculateShortestPath_Dijkstra(string location1_name, string location2_name);
+  pair<double, vector<string>> CalculateShortestPath_Dijkstra(string location1_name, string location2_name);
 
  private:
   void TravellingTrojan_(vector<string> &ids, vector<vector<string>> &paths, vector<string> &cur_path, double &cur_dis,

@@ -9,11 +9,15 @@
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
+#define INIT(status)                    \
+  ui->groupTSP->setEnabled(status);     \
+  ui->lineEditVia1->setEnabled(status); \
+  ui->lineEditVia2->setEnabled(status); \
+  ui->lineEditVia3->setEnabled(status); \
+  ui->lineEditVia4->setEnabled(status); \
+  ui->lineEditVia5->setEnabled(status);
+
   ui->setupUi(this);
-  //  string s1 = "Ralphs", s2 = "ChickfilA";
-  //  vector<string> a;
-  //  TrojanMap x;
-  //  a = x.CalculateShortestPath_Dijkstra(s1, s2);
 
   ui->labelLogo->setScaledContents(true);
   ui->labelLogo->setPixmap(QPixmap(":/logo.png"));
@@ -28,20 +32,25 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     QMessageBox::information(
         this, "About",
         "This is based on the final project of EE599 (Computer Principles) in Spring 2021 at University of Southern "
-        "California. \n\nAuthor: Haoxin Ma \nCourse Instructor: Arash Saifhashemi \n\nRepository Link: "
-        "https://github.com/HaoxinMa/Trojan-Map",
+        "California. \n\nAuthor: Haoxin Ma \nCourse Instructor: Arash Saifhashemi \n\nFor more details please visit "
+        "the repository link: \nhttps://github.com/HaoxinMa/Trojan-Map",
         QMessageBox::Close);
   });
 
+  ui->radioButtonAuto->setChecked(true);
+  ui->radioButtonBF->setChecked(true);
+  ui->radioButton2Opt->setEnabled(false);
+  INIT(false)
+
   connect(ui->radioButtonAuto, &QRadioButton::clicked, [=]() {
     if (ui->radioButtonAuto->isChecked()) {
-      ui->groupTSP->setEnabled(false);
+      INIT(false)
     }
   });
 
   connect(ui->radioButtonHeli, &QRadioButton::clicked, [=]() {
     if (ui->radioButtonHeli->isChecked()) {
-      ui->groupTSP->setEnabled(true);
+      INIT(true)
     }
   });
 
@@ -171,26 +180,47 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   });
 
   connect(ui->pushButton, &QPushButton::clicked, [=]() {
+    double time_start, time_end;
+    TrojanMap x;
     v_pos.clear();
     v_id.clear();
-    TrojanMap x;
-    vector<string> location_ids;
-    for (auto &id : ids) {
-      if (id != "") {
-        location_ids.push_back(id);
+    if (ui->radioButtonAuto->isChecked()) {
+      string s1 = ui->lineEditFrom->text().toStdString();
+      string s2 = ui->lineEditTo->text().toStdString();
+      time_start = (double)clock();
+      pair<double, vector<string>> pr = x.CalculateShortestPath_Dijkstra(s1, s2);
+      time_end = (double)clock();
+      if (pr.first == -1) {
+        status_txt = "No path found.";
+        labelStatus->setText(status_txt);
       }
+      status_txt = "Distance: " + QString::number(pr.first) + " miles (" + QString::number(pr.first / 0.62137) +
+                   " km). Time elapsed: " + QString::number((time_end - time_start) / 1000) + " s.";
+      labelStatus->setText(status_txt);
+      for (auto &id : pr.second) {
+        v_pos.push_back(x.GetPositionFromID(id));
+      }
+      paint_type = 3;
     }
-    double time_start = (double)clock();
-    pair<double, vector<vector<string>>> pr = x.TravellingTrojan(location_ids);
-    double time_end = (double)clock();
-    status_txt = "Distance: " + QString::number(pr.first) + " miles (" + QString::number(pr.first / 0.62137) +
-                 " km). Time elapsed: " + QString::number(time_end - time_start) + " ms.";
-    labelStatus->setText(status_txt);
-    v_id = pr.second[pr.second.size() - 1];
-    for (auto &id : v_id) {
-      v_pos.push_back(x.GetPositionFromID(id));
+    if (ui->radioButtonHeli->isChecked()) {
+      vector<string> location_ids;
+      for (auto &id : ids) {
+        if (id != "") {
+          location_ids.push_back(id);
+        }
+      }
+      time_start = (double)clock();
+      pair<double, vector<vector<string>>> pr = x.TravellingTrojan(location_ids);
+      time_end = (double)clock();
+      status_txt = "Distance: " + QString::number(pr.first) + " miles (" + QString::number(pr.first / 0.62137) +
+                   " km). Time elapsed: " + QString::number(time_end - time_start) + " ms.";
+      labelStatus->setText(status_txt);
+      v_id = pr.second[pr.second.size() - 1];
+      for (auto &id : v_id) {
+        v_pos.push_back(x.GetPositionFromID(id));
+      }
+      paint_type = 2;
     }
-    paint_type = 2;
     update();
   });
 }
@@ -219,6 +249,17 @@ void MainWindow::paintEvent(QPaintEvent *) {
       pen.setWidth(3);
       pen.setColor(Qt::red);
       pen.setStyle(Qt::DashLine);
+      painter.setPen(pen);
+      for (unsigned long i = 0; i < v_pos.size() - 1; i++) {
+        painter.drawLine(ToQPoint(v_pos[i]), ToQPoint(v_pos[i + 1]));
+      }
+      break;
+    case 3:
+      painter.drawPoint(ToQPoint(v_pos[0]));
+      painter.drawPoint(ToQPoint(v_pos[v_pos.size() - 1]));
+      pen.setWidth(3);
+      pen.setColor(Qt::red);
+      pen.setStyle(Qt::SolidLine);
       painter.setPen(pen);
       for (unsigned long i = 0; i < v_pos.size() - 1; i++) {
         painter.drawLine(ToQPoint(v_pos[i]), ToQPoint(v_pos[i + 1]));
