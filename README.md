@@ -53,8 +53,9 @@ Course Instructor: Arash Saifhashemi
   
   ### Automobile path planning using Dijkstra Algorithm
 
-![](/home/haoxin/code/Picture1.png)
+![Picture1](https://user-images.githubusercontent.com/61277885/113846032-a4dafb00-97c8-11eb-8ba9-3b28b566157e.png)
 
-### Helicopter path planning (TSP) using brute-force backtracking 
+  ### Helicopter path planning (TSP) using brute-force backtracking 
+  
+![Uploading Picture2.png…]()
 
-![](/home/haoxin/code/Picture2.png)
