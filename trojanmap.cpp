@@ -1,5 +1,18 @@
 #include "trojanmap.h"
 
+#include <math.h>
+
+#include <QFile>
+#include <QString>
+#include <QStringList>
+#include <algorithm>
+#include <cfloat>
+#include <map>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 Node::Node(){};
 Node::Node(const Node &n) {
   id = n.id;
@@ -10,7 +23,7 @@ Node::Node(const Node &n) {
 }
 
 /**
- * CreateGraphFromCSVFile: Read the map data from the csv file
+ * TrojanMap: Read the map data from the csv file
  *
  */
 TrojanMap::TrojanMap() {
@@ -52,7 +65,8 @@ vector<string> TrojanMap::Autocomplete(string name) {
   vector<string> results;
   transform(name.begin(), name.end(), name.begin(), ::tolower);
   for (auto &pr : data) {
-    string str(pr.second.name);
+    string str;
+    str.resize(pr.second.name.size());
     transform(pr.second.name.begin(), pr.second.name.end(), str.begin(), ::tolower);
     if (name == str.substr(0, name.size())) {
       results.push_back(pr.second.name);
@@ -85,15 +99,6 @@ pair<double, double> TrojanMap::GetPosition(const string &name) {
   return make_pair(0, 0);
 }
 
-pair<double, double> TrojanMap::GetPositionFromID(const string &id) {
-  for (auto &pr : data) {
-    if (pr.first == id) {
-      return make_pair(pr.second.lon, pr.second.lat);
-    }
-  }
-  return make_pair(0, 0);
-}
-
 /**
  * CalculateDistance: Get the distance between 2 nodes.
  *
@@ -102,18 +107,12 @@ pair<double, double> TrojanMap::GetPositionFromID(const string &id) {
  * @return {double}  : distance in mile
  */
 double TrojanMap::CalculateDistance(const Node &a, const Node &b) {
-  // Do not change this function
-  // TODO: Use Haversine Formula:
-  // dlon = lon2 - lon1;
-  // dlat = lat2 - lat1;
-  // a = (sin(dlat / 2)) ^ 2 + cos(lat1) * cos(lat2) * (sin(dlon / 2)) ^ 2;
-  // c = 2 * arcsin(min(1, sqrt(a)));
-  // distances = 3961 * c; where 3961 is the approximate radius of the earth at the latitude of Washington D.C. in miles
+  // Use Haversine Formula
   double dlon = (b.lon - a.lon) * M_PI / 180.0;
   double dlat = (b.lat - a.lat) * M_PI / 180.0;
   double p = pow(sin(dlat / 2), 2.0) + cos(a.lat * M_PI / 180.0) * cos(b.lat * M_PI / 180.0) * pow(sin(dlon / 2), 2.0);
   double c = 2 * asin(min(1.0, sqrt(p)));
-  return c * 3961;
+  return c * 3961;  // where 3961 is the approximate radius of the earth at the latitude of Washington D.C. in miles
 }
 
 /**
@@ -131,22 +130,78 @@ double TrojanMap::CalculatePathLength(const vector<string> &path) {
 }
 
 /**
+ * CalculateShortestPath_Dijkstra: Given 2 locations, return the shortest path which is a
+ * list of id.
+ *
+ * @param  {string} id1                   : id which represents the place you start from
+ * @param  {string} id2                   : id which represents the place you will go to
+ * @return {pair<double, vector<string>>} : a pair of total distance and the all the progress to get final path
+ */
+pair<double, vector<string>> TrojanMap::Dijkstra(string id1, string id2) {
+  vector<string> path;
+  // dis: <id, <id's_predecessor, distance_from_id1_to_id>
+  unordered_map<string, pair<string, double>> dis(data.size());
+  // q: <distance_from_id1_to_id, id>
+  priority_queue<pair<double, string>, vector<pair<double, string>>, greater<pair<double, string>>> q;
+  bool is_id2_visited = false;
+  if (id1 == "-1" || id2 == "-1") return make_pair(-1, path);
+
+  // initialization
+  for (auto &pr : data) {
+    dis[pr.first] = make_pair("", DBL_MAX);
+  }
+  dis[id1].second = 0;
+  q.push(make_pair(0, id1));
+
+  // update distance
+  double path_dis = DBL_MAX;
+  while (!q.empty()) {
+    string id = q.top().second;
+    if (id == id2) {
+      is_id2_visited = true;
+      path_dis = q.top().first;
+      break;
+    }
+    q.pop();
+    for (auto nb_id : data[id].neighbors) {
+      double new_dis = dis[id].second + CalculateDistance(data[id], data[nb_id]);
+      if (new_dis < dis[nb_id].second) {
+        dis[nb_id] = make_pair(id, new_dis);
+        q.push(make_pair(new_dis, nb_id));
+      }
+    }
+  }
+
+  if (!is_id2_visited) return make_pair(-1, path);
+
+  // backtrack predecessors of id2
+  string id = id2;
+  while (id != "") {
+    path.push_back(id);
+    id = dis[id].first;
+  }
+  reverse(path.begin(), path.end());
+  return make_pair(path_dis, path);
+}
+
+/**
  * Travelling salesman problem: Given a list of locations, return the shortest path which visit all the places and back
  * to the start point.
  *
  * @param  {vector<string>} input                : a list of locations needs to visit
  * @return {pair<double, vector<vector<string>>} : a pair of total distance and the all the progress to get final path
  */
-pair<double, vector<vector<string>>> TrojanMap::TravellingTrojan(vector<string> &location_ids) {
+pair<double, vector<vector<string>>> TrojanMap::TSP(vector<string> &location_ids) {
   vector<vector<string>> path;
+  if (location_ids.size() <= 1) return make_pair(-1, path);
   vector<string> cur_path;
   double min_dis = 0, cur_dis = 0;
-  TravellingTrojan_(location_ids, path, cur_path, cur_dis, min_dis);
+  TSP(location_ids, path, cur_path, cur_dis, min_dis);
   return make_pair(min_dis, path);
 }
 
-void TrojanMap::TravellingTrojan_(vector<string> &ids, vector<vector<string>> &paths, vector<string> &cur_path,
-                                  double &cur_dis, double &min_dis) {
+void TrojanMap::TSP(vector<string> &ids, vector<vector<string>> &paths, vector<string> &cur_path, double &cur_dis,
+                    double &min_dis) {
   // each cur_path starts from ids[0]
   if (cur_path.empty()) {
     cur_dis = 0;
@@ -172,77 +227,78 @@ void TrojanMap::TravellingTrojan_(vector<string> &ids, vector<vector<string>> &p
 
   // iterate children
   for (unsigned long i = 1; i < ids.size(); i++) {
-    if (find(cur_path.begin(), cur_path.end(), ids[i]) == cur_path.end()) {
+    if (count(cur_path.begin(), cur_path.end(), ids[i]) == 0) {
       double delta_dis = CalculateDistance(data[cur_path.back()], data[ids[i]]);
       cur_dis += delta_dis;
       cur_path.push_back(ids[i]);
-      TravellingTrojan_(ids, paths, cur_path, cur_dis, min_dis);
+      TSP(ids, paths, cur_path, cur_dis, min_dis);
       cur_path.pop_back();
       cur_dis -= delta_dis;
     }
   }
 }
 
-/**
- * CalculateShortestPath_Dijkstra: Given 2 locations, return the shortest path which is a
- * list of id.
- *
- * @param  {string} location1_name            : start
- * @param  {string} location2_name            : goal
- * @return {pair<double, vector<string>>}     : a pair of total distance and the all the progress to get final path
- */
-pair<double, vector<string>> TrojanMap::CalculateShortestPath_Dijkstra(string location1_name, string location2_name) {
-  unordered_set<string> visited;
-  unordered_map<string, pair<string, double>> dis(data.size());  // distance map: <ID, <predecessor ID, distance>
+pair<double, vector<vector<string>>> TrojanMap::TSP_2opt(vector<string> &location_ids) {
+  vector<vector<string>> paths;  // store the progress
+  int size = location_ids.size();
 
-  string id1 = GetID(location1_name), id2 = GetID(location2_name);
-
-  // initialization
-  for (auto &pr : data) {
-    dis[pr.first] = make_pair("", DBL_MAX);
+  // initialize the path
+  vector<string> initial_path;
+  double initial_length = 0;
+  initial_path.assign(location_ids.begin(), location_ids.end());
+  initial_path.push_back(location_ids[0]);
+  paths.push_back(initial_path);
+  for (unsigned long i = 0; i < initial_path.size() - 1; i++) {
+    initial_length += CalculateDistance(data[initial_path[i]], data[initial_path[i + 1]]);
   }
-  dis[id1] = make_pair("", 0);
-  for (auto &id : data[id1].neighbors) {
-    dis[id] = make_pair(id1, CalculateDistance(data[id1], data[id]));
-  }
-  visited.insert(id1);
 
-  string p_id, u_id;
-  while (visited.size() < data.size()) {
-    double min_dis = DBL_MAX * 0.9;
-
-    // find an unvisited neighbor with min distance
-    for (auto &pr : dis) {
-      if (visited.end() == find(visited.begin(), visited.end(), pr.first)) {  // this is unvisited
-        if (pr.second.second < min_dis) {
-          p_id = pr.second.first;
-          min_dis = pr.second.second;
-          u_id = pr.first;
+  // 2-opt, get a shorter path
+  vector<string> cur_path = initial_path;
+  double change_length;
+  double min_change;
+  bool isImproved = true;
+  int left;
+  int right;
+  while (isImproved) {
+    isImproved = false;
+    min_change = 0;
+    left = 0;
+    right = 0;
+    for (int i = 1; i < size - 1; i++) {
+      for (int j = i + 1; j < size; j++) {
+        change_length = CalculateDistance(data[cur_path[i - 1]], data[cur_path[j]]) +
+                        CalculateDistance(data[cur_path[i]], data[cur_path[j + 1]]) -
+                        CalculateDistance(data[cur_path[i - 1]], data[cur_path[i]]) -
+                        CalculateDistance(data[cur_path[j]], data[cur_path[j + 1]]);
+        if (change_length < min_change) {
+          min_change = change_length;
+          left = i;
+          right = j;
+          isImproved = true;
         }
       }
     }
-    visited.insert(u_id);
-
-    // if the destination has been found
-    if (u_id == id2) {
-      break;
-    }
-
-    // update with the distance to the neighbors of u
-    for (auto &id : data[u_id].neighbors) {
-      double new_dis = min_dis + CalculateDistance(data[u_id], data[id]);
-      if (new_dis < dis[id].second) {
-        dis[id] = make_pair(u_id, new_dis);
-      }
+    // generate the shorter path and put it in paths
+    if (isImproved) {
+      UpdatePaths(paths, cur_path, left, right);
     }
   }
-  vector<string> path;
-  if (visited.size() == data.size()) return make_pair(-1, path);
-  u_id = id2;
-  while (u_id != "") {
-    path.push_back(u_id);
-    u_id = dis[u_id].first;
+
+  // generate final length
+  double final_length = 0;
+  for (unsigned long i = 0; i < paths[paths.size() - 1].size(); i++) {
+    if (i == paths[paths.size() - 1].size() - 1) {
+      final_length += CalculateDistance(data[paths[paths.size() - 1][i]], data[paths[paths.size() - 1][0]]);
+    } else {
+      final_length += CalculateDistance(data[paths[paths.size() - 1][i]], data[paths[paths.size() - 1][i + 1]]);
+    }
   }
-  reverse(path.begin(), path.end());
-  return make_pair(dis[id2].second, path);
+
+  pair<double, vector<vector<string>>> results(final_length, paths);
+  return results;
+}
+
+void TrojanMap::UpdatePaths(vector<vector<string>> &paths, vector<string> &cur_path, int left, int right) {
+  swap(cur_path[left], cur_path[right]);
+  paths.push_back(cur_path);
 }

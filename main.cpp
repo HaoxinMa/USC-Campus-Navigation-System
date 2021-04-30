@@ -1,7 +1,4 @@
 #include <QApplication>
-#include <QCoreApplication>
-#include <QDebug>
-#include <QPluginLoader>
 
 #include "mainwindow.h"
 #include "trojanmap.h"

@@ -1,21 +1,15 @@
 #include "mainwindow.h"
 
-#include <sys/time.h>
-
 #include <QMessageBox>
 #include <QPainter>
 
 #include "trojanmap.h"
 #include "ui_mainwindow.h"
 
+#define automobile false
+#define helicopter true
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
-#define INIT(status)                    \
-  ui->groupTSP->setEnabled(status);     \
-  ui->lineEditVia1->setEnabled(status); \
-  ui->lineEditVia2->setEnabled(status); \
-  ui->lineEditVia3->setEnabled(status); \
-  ui->lineEditVia4->setEnabled(status); \
-  ui->lineEditVia5->setEnabled(status);
 
   ui->setupUi(this);
 
@@ -28,198 +22,189 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   QPushButton *pushbuttonAbout = new QPushButton(this);
   pushbuttonAbout->setText("About");
   pushbuttonAbout->setGeometry(1448, 992, 60, 22);
-  connect(pushbuttonAbout, &QPushButton::clicked, [=]() {
-    QMessageBox::information(
-        this, "About",
-        "This is based on the final project of EE599 (Computer Principles) in Spring 2021 at University of Southern "
-        "California. \n\nAuthor: Haoxin Ma \nCourse Instructor: Arash Saifhashemi \n\nFor more details please visit "
-        "the repository link: \nhttps://github.com/HaoxinMa/Trojan-Map",
-        QMessageBox::Close);
+  connect(pushbuttonAbout, &QPushButton::clicked, [this]() {
+    QString about_txt =
+        "This project is based on the final project of EE599 (Computer Principles) in Spring 2021 at University of "
+        "Southern California. \n\n"
+        "Author: Haoxin Ma \n"
+        "Course Instructor: Arash Saifhashemi \n\n"
+        "For more details please visit the repository link: \n"
+        "https://github.com/HaoxinMa/Trojan-Map";
+    QMessageBox::information(this, "About", about_txt, QMessageBox::Close);
   });
-
   ui->radioButtonAuto->setChecked(true);
   ui->radioButtonBF->setChecked(true);
-  ui->radioButton2Opt->setEnabled(false);
-  INIT(false)
+  SwitchMode(automobile);
 
-  connect(ui->radioButtonAuto, &QRadioButton::clicked, [=]() {
-    if (ui->radioButtonAuto->isChecked()) {
-      INIT(false)
-    }
+  connect(ui->radioButtonAuto, &QRadioButton::clicked, [this]() {
+    if (ui->radioButtonAuto->isChecked()) SwitchMode(automobile);
   });
 
-  connect(ui->radioButtonHeli, &QRadioButton::clicked, [=]() {
-    if (ui->radioButtonHeli->isChecked()) {
-      INIT(true)
-    }
+  connect(ui->radioButtonHeli, &QRadioButton::clicked, [this]() {
+    if (ui->radioButtonHeli->isChecked()) SwitchMode(helicopter);
   });
 
-  pos.resize(7);
-  ids.resize(7);
+  points.resize(7);
 
   connect(ui->lineEditFrom, &QLineEdit::textChanged, ui->listWidget, [&]() {
-    status = 0;
+    which_ctl_status_changed = 0;
     ui->listWidget->clear();
-    string str_from = ui->lineEditFrom->text().toStdString();
-    vector<string> search_res = TrojanMap().Autocomplete(str_from);
-    QStringList q_search_res;
-    for (unsigned long i = 0; i < search_res.size(); i++) {
-      q_search_res << QString::fromStdString(search_res[i]);
-    }
+    string str = ui->lineEditFrom->text().toStdString();
+    vector<string> search_res = TrojanMap().Autocomplete(str);
+    QStringList q_search_res = ToQStringList(search_res);
     ui->listWidget->addItems(q_search_res);
   });
 
   connect(ui->lineEditTo, &QLineEdit::textChanged, ui->listWidget, [&]() {
-    status = 1;
+    which_ctl_status_changed = 1;
     ui->listWidget->clear();
     string str_from = ui->lineEditTo->text().toStdString();
     vector<string> search_res = TrojanMap().Autocomplete(str_from);
-    QStringList q_search_res;
-    for (unsigned long i = 0; i < search_res.size(); i++) {
-      q_search_res << QString::fromStdString(search_res[i]);
-    }
+    QStringList q_search_res = ToQStringList(search_res);
     ui->listWidget->addItems(q_search_res);
   });
 
   connect(ui->lineEditVia1, &QLineEdit::textChanged, ui->listWidget, [&]() {
-    status = 2;
+    which_ctl_status_changed = 2;
     ui->listWidget->clear();
     string str_from = ui->lineEditVia1->text().toStdString();
     vector<string> search_res = TrojanMap().Autocomplete(str_from);
-    QStringList q_search_res;
-    for (unsigned long i = 0; i < search_res.size(); i++) {
-      q_search_res << QString::fromStdString(search_res[i]);
-    }
+    QStringList q_search_res = ToQStringList(search_res);
     ui->listWidget->addItems(q_search_res);
   });
 
   connect(ui->lineEditVia2, &QLineEdit::textChanged, ui->listWidget, [&]() {
-    status = 3;
+    which_ctl_status_changed = 3;
     ui->listWidget->clear();
     string str_from = ui->lineEditVia2->text().toStdString();
     vector<string> search_res = TrojanMap().Autocomplete(str_from);
-    QStringList q_search_res;
-    for (unsigned long i = 0; i < search_res.size(); i++) {
-      q_search_res << QString::fromStdString(search_res[i]);
-    }
+    QStringList q_search_res = ToQStringList(search_res);
     ui->listWidget->addItems(q_search_res);
   });
 
   connect(ui->lineEditVia3, &QLineEdit::textChanged, ui->listWidget, [&]() {
-    status = 4;
+    which_ctl_status_changed = 4;
     ui->listWidget->clear();
     string str_from = ui->lineEditVia3->text().toStdString();
     vector<string> search_res = TrojanMap().Autocomplete(str_from);
-    QStringList q_search_res;
-    for (unsigned long i = 0; i < search_res.size(); i++) {
-      q_search_res << QString::fromStdString(search_res[i]);
-    }
+    QStringList q_search_res = ToQStringList(search_res);
     ui->listWidget->addItems(q_search_res);
   });
 
   connect(ui->lineEditVia4, &QLineEdit::textChanged, ui->listWidget, [&]() {
-    status = 5;
+    which_ctl_status_changed = 5;
     ui->listWidget->clear();
     string str_from = ui->lineEditVia4->text().toStdString();
     vector<string> search_res = TrojanMap().Autocomplete(str_from);
-    QStringList q_search_res;
-    for (unsigned long i = 0; i < search_res.size(); i++) {
-      q_search_res << QString::fromStdString(search_res[i]);
-    }
+    QStringList q_search_res = ToQStringList(search_res);
     ui->listWidget->addItems(q_search_res);
   });
 
   connect(ui->lineEditVia5, &QLineEdit::textChanged, ui->listWidget, [&]() {
-    status = 6;
+    which_ctl_status_changed = 6;
     ui->listWidget->clear();
     string str_from = ui->lineEditVia5->text().toStdString();
     vector<string> search_res = TrojanMap().Autocomplete(str_from);
-    QStringList q_search_res;
-    for (unsigned long i = 0; i < search_res.size(); i++) {
-      q_search_res << QString::fromStdString(search_res[i]);
-    }
+    QStringList q_search_res = ToQStringList(search_res);
     ui->listWidget->addItems(q_search_res);
   });
 
-  connect(ui->listWidget, &QListWidget::itemClicked, [&](QListWidgetItem *item) {
+  connect(ui->listWidget, &QListWidget::itemClicked, [this, labelStatus](QListWidgetItem *item) {
     TrojanMap x;
     string str;
-    if (status == 0) {
-      ui->lineEditFrom->setText(item->text());
-      str = ui->lineEditFrom->text().toStdString();
+    switch (which_ctl_status_changed) {
+      case 0:
+        ui->lineEditFrom->setText(item->text());
+        str = ui->lineEditFrom->text().toStdString();
+        break;
+      case 1:
+        ui->lineEditTo->setText(item->text());
+        str = ui->lineEditTo->text().toStdString();
+        break;
+      case 2:
+        ui->lineEditVia1->setText(item->text());
+        str = ui->lineEditVia1->text().toStdString();
+        break;
+      case 3:
+        ui->lineEditVia2->setText(item->text());
+        str = ui->lineEditVia2->text().toStdString();
+        break;
+      case 4:
+        ui->lineEditVia3->setText(item->text());
+        str = ui->lineEditVia3->text().toStdString();
+        break;
+      case 5:
+        ui->lineEditVia4->setText(item->text());
+        str = ui->lineEditVia4->text().toStdString();
+        break;
+      case 6:
+        ui->lineEditVia5->setText(item->text());
+        str = ui->lineEditVia5->text().toStdString();
+        break;
     }
-    if (status == 1) {
-      ui->lineEditTo->setText(item->text());
-      str = ui->lineEditTo->text().toStdString();
-    }
-    if (status == 2) {
-      ui->lineEditVia1->setText(item->text());
-      str = ui->lineEditVia1->text().toStdString();
-    }
-    if (status == 3) {
-      ui->lineEditVia2->setText(item->text());
-      str = ui->lineEditVia2->text().toStdString();
-    }
-    if (status == 4) {
-      ui->lineEditVia3->setText(item->text());
-      str = ui->lineEditVia3->text().toStdString();
-    }
-    if (status == 5) {
-      ui->lineEditVia4->setText(item->text());
-      str = ui->lineEditVia4->text().toStdString();
-    }
-    if (status == 6) {
-      ui->lineEditVia5->setText(item->text());
-      str = ui->lineEditVia5->text().toStdString();
-    }
-    ids[status] = x.GetID(str);
-    pos[status] = x.GetPosition(str);
-    paint_type = 1;
+    auto pr = x.GetPosition(str);
+    points[which_ctl_status_changed] = pr;
+    status_txt =
+        QString::fromStdString(str) + " (" + QString::number(pr.first) + ", " + QString::number(pr.second) + ")";
+    labelStatus->setText(status_txt);
+    painter_type = PainterType::Points;
     update();
-    status = -1;
+    which_ctl_status_changed = -1;
   });
 
   connect(ui->pushButton, &QPushButton::clicked, [=]() {
-    double time_start, time_end;
     TrojanMap x;
-    v_pos.clear();
-    v_id.clear();
+    path_points.clear();
+
     if (ui->radioButtonAuto->isChecked()) {
-      string s1 = ui->lineEditFrom->text().toStdString();
-      string s2 = ui->lineEditTo->text().toStdString();
-      time_start = (double)clock();
-      pair<double, vector<string>> pr = x.CalculateShortestPath_Dijkstra(s1, s2);
-      time_end = (double)clock();
+      string id1 = x.GetID(ui->lineEditFrom->text().toStdString());
+      string id2 = x.GetID(ui->lineEditTo->text().toStdString());
+      pair<double, vector<string>> pr = x.Dijkstra(id1, id2);
       if (pr.first == -1) {
-        status_txt = "No path found.";
+        QMessageBox::warning(this, "Warning", "Sorry. Due to our limited map data, no path is found.");
+        return;
+      } else {
+        status_txt =
+            "Distance: " + QString::number(pr.first) + " miles (" + QString::number(pr.first / 0.62137) + " km)";
         labelStatus->setText(status_txt);
       }
-      status_txt = "Distance: " + QString::number(pr.first) + " miles (" + QString::number(pr.first / 0.62137) +
-                   " km). Time elapsed: " + QString::number((time_end - time_start) / 1000) + " s.";
-      labelStatus->setText(status_txt);
       for (auto &id : pr.second) {
-        v_pos.push_back(x.GetPositionFromID(id));
+        path_points.push_back(make_pair(x.data[id].lon, x.data[id].lat));
       }
-      paint_type = 3;
+      painter_type = PainterType::Dijkstra;
     }
+
     if (ui->radioButtonHeli->isChecked()) {
       vector<string> location_ids;
-      for (auto &id : ids) {
-        if (id != "") {
-          location_ids.push_back(id);
-        }
+      if (!ui->lineEditFrom->text().isEmpty())
+        location_ids.push_back((x.GetID(ui->lineEditFrom->text().toStdString())));
+      else {
+        QMessageBox::warning(this, "Warning", "Please input a starting point");
+        return;
       }
-      time_start = (double)clock();
-      pair<double, vector<vector<string>>> pr = x.TravellingTrojan(location_ids);
-      time_end = (double)clock();
-      status_txt = "Distance: " + QString::number(pr.first) + " miles (" + QString::number(pr.first / 0.62137) +
-                   " km). Time elapsed: " + QString::number(time_end - time_start) + " ms.";
+      if (!ui->lineEditVia1->text().isEmpty())
+        location_ids.push_back((x.GetID(ui->lineEditVia1->text().toStdString())));
+      if (!ui->lineEditVia2->text().isEmpty())
+        location_ids.push_back((x.GetID(ui->lineEditVia2->text().toStdString())));
+      if (!ui->lineEditVia3->text().isEmpty())
+        location_ids.push_back((x.GetID(ui->lineEditVia3->text().toStdString())));
+      if (!ui->lineEditVia4->text().isEmpty())
+        location_ids.push_back((x.GetID(ui->lineEditVia4->text().toStdString())));
+      if (!ui->lineEditVia5->text().isEmpty())
+        location_ids.push_back((x.GetID(ui->lineEditVia5->text().toStdString())));
+      pair<double, vector<vector<string>>> pr;
+      if (location_ids.size() <= 1) {
+        QMessageBox::warning(this, "Warning", "Please input at least one intermediate point");
+        return;
+      }
+      if (ui->radioButtonBF->isChecked()) pr = x.TSP(location_ids);
+      if (ui->radioButton2Opt->isChecked()) pr = x.TSP_2opt(location_ids);
+      status_txt = "Distance: " + QString::number(pr.first) + " miles (" + QString::number(pr.first / 0.62137) + " km)";
       labelStatus->setText(status_txt);
-      v_id = pr.second[pr.second.size() - 1];
-      for (auto &id : v_id) {
-        v_pos.push_back(x.GetPositionFromID(id));
+      for (auto &id : pr.second[pr.second.size() - 1]) {
+        path_points.push_back(make_pair(x.data[id].lon, x.data[id].lat));
       }
-      paint_type = 2;
+      painter_type = PainterType::TSP;
     }
     update();
   });
@@ -231,48 +216,109 @@ void MainWindow::paintEvent(QPaintEvent *) {
   QPainter painter(this);
   painter.translate(260, 0);
   painter.drawPixmap(0, 0, QPixmap(":/map.jpg"));
-  QPen pen(Qt::blue);
+
+  QPen pen;
+  pen.setColor(Qt::black);
   pen.setWidth(8);
   painter.setPen(pen);
-  switch (paint_type) {
-    case 1:
-      for (unsigned long i = 0; i < pos.size(); i++) {
-        if (pos[i].first != 0 && pos[i].second != 0) {
-          painter.drawPoint(ToQPoint(pos[i]));
+
+  switch (painter_type) {
+    case PainterType::Points:
+      for (unsigned long i = 0; i < points.size(); i++) {
+        if (points[i].first != 0 && points[i].second != 0) {
+          painter.drawPoint(ToQPoint(points[i]));
         }
       }
       break;
-    case 2:
-      for (unsigned long i = 0; i < v_pos.size(); i++) {
-        painter.drawPoint(ToQPoint(v_pos[i]));
-      }
-      pen.setWidth(3);
-      pen.setColor(Qt::red);
-      pen.setStyle(Qt::DashLine);
-      painter.setPen(pen);
-      for (unsigned long i = 0; i < v_pos.size() - 1; i++) {
-        painter.drawLine(ToQPoint(v_pos[i]), ToQPoint(v_pos[i + 1]));
-      }
-      break;
-    case 3:
-      painter.drawPoint(ToQPoint(v_pos[0]));
-      painter.drawPoint(ToQPoint(v_pos[v_pos.size() - 1]));
-      pen.setWidth(3);
-      pen.setColor(Qt::red);
+
+    case PainterType::Dijkstra:
+      // draw verticies
+      painter.drawPoint(ToQPoint(points[0]));
+      painter.drawPoint(ToQPoint(points[1]));
+
+      // draw edges
+      pen.setWidth(5);
+      pen.setColor(Qt::darkGreen);
       pen.setStyle(Qt::SolidLine);
       painter.setPen(pen);
-      for (unsigned long i = 0; i < v_pos.size() - 1; i++) {
-        painter.drawLine(ToQPoint(v_pos[i]), ToQPoint(v_pos[i + 1]));
+      for (unsigned long i = 0; i < path_points.size() - 1; i++) {
+        painter.drawLine(ToQPoint(path_points[i]), ToQPoint(path_points[i + 1]));
       }
+
+      // draw text
+      pen.setColor(Qt::black);
+      painter.setPen(pen);
+      painter.drawText(ToQPoint(points[0]), "FROM");
+      painter.drawText(ToQPoint(points[1]), "TO");
+      break;
+
+    case PainterType::TSP:
+      // draw verticies
+      for (unsigned long i = 0; i < path_points.size(); i++) {
+        painter.drawPoint(ToQPoint(path_points[i]));
+      }
+
+      // draw edges
+      pen.setWidth(5);
+      pen.setColor(Qt::darkGreen);
+      pen.setStyle(Qt::DashLine);
+      painter.setPen(pen);
+      for (unsigned long i = 0; i < path_points.size() - 1; i++) {
+        painter.drawLine(ToQPoint(path_points[i]), ToQPoint(path_points[i + 1]));
+      }
+
+      // draw text
+      pen.setColor(Qt::black);
+      painter.setPen(pen);
+      painter.drawText(ToQPoint(points[0]), "FROM/TO");
       break;
   }
 }
 
+/**
+ * SwitchMode: Set controls enabled/disabled according to mode choice
+ *
+ * @param  {bool} choice : 0: automobile, 1: helicopter
+ */
+
+void MainWindow::SwitchMode(bool choice) {
+  ui->lineEditTo->setEnabled(choice == automobile);
+  if (choice == helicopter) ui->lineEditTo->setText("");
+  ui->lineEditVia1->setEnabled(choice == helicopter);
+  ui->lineEditVia2->setEnabled(choice == helicopter);
+  ui->lineEditVia3->setEnabled(choice == helicopter);
+  ui->lineEditVia4->setEnabled(choice == helicopter);
+  ui->lineEditVia5->setEnabled(choice == helicopter);
+  ui->groupTSP->setEnabled(choice == helicopter);
+}
+
+/**
+ * ToQPoint: Convert from longitude, latitude to coordinates in the main window
+ *
+ * @param  {const pair<double, double>&} pos : longitude, latitude
+ * @return {QPoint}                          : QPoint object with coordinates in the main window
+ */
+
 QPoint MainWindow::ToQPoint(const pair<double, double> &pos) {
-  QPoint qp;
+  QPoint qpoint;
   constexpr double a = 1248.0 / ((-118.26524) - (-118.29997));
   constexpr double b = 992.0 / (34.01007 - 34.03294);
-  qp.setX(a * (pos.first - (-118.29997)));
-  qp.setY(b * (pos.second - 34.03294));
-  return qp;
+  qpoint.setX(a * (pos.first - (-118.29997)));
+  qpoint.setY(b * (pos.second - 34.03294));
+  return qpoint;
+}
+
+/**
+ * ToQStringList: Convert from vector<string> to QStringList
+ *
+ * @param  {const vector<string> &} v
+ * @return {QStringList}
+ */
+
+QStringList MainWindow::ToQStringList(const vector<string> &v) {
+  QStringList qstringlist;
+  for (unsigned long i = 0; i < v.size(); i++) {
+    qstringlist << QString::fromStdString(v[i]);
+  }
+  return qstringlist;
 }

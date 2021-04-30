@@ -63,4 +63,4 @@ Special thanks to:
 		Dr. Arash Saifhashemi (Lecturer)
 		Dr. Hong-Shuo Chen (Teaching Assistant)
 		Huaqian Fu
-for their guidance or for bugs reporting to this project.
+for their guidance or bugs reporting to this project.
