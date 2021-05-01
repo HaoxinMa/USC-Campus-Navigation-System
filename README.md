@@ -47,6 +47,12 @@ It is highly recommended to update your environment to the latest stable version
   sudo apt install libglu1-mesa-dev
   ```
 
+- ### Google Test
+
+  ```shell
+  mv gtest_dependency.pri ./googletest
+  ```
+
 ## Output Preview
 
   ### Automobile path planning using Dijkstra Algorithm
@@ -57,10 +63,55 @@ It is highly recommended to update your environment to the latest stable version
 
   ![Picture2](https://user-images.githubusercontent.com/61277885/113848234-d654c600-97ca-11eb-8b36-ad71781dd2f8.png)
 
-## Acknowledgement
+The 2-opt heuristic algorithm is more efficient but less accurate to get the solution.
 
-Special thanks to:
-		Dr. Arash Saifhashemi (Lecturer)
-		Dr. Hong-Shuo Chen (Teaching Assistant)
-		Huaqian Fu
-for their guidance or bugs reporting to this project.
+## Unit Testing
+
+Use GoogleTest for unit testing in `gtest.cpp`
+
+Here is the output in terminal if everything is ok.
+
+```shell
+[==========] Running 12 tests from 4 test suites.
+[----------] Global test environment set-up.
+[----------] 2 tests from Autocomplete
+[ RUN      ] Autocomplete.InvalidInput
+[       OK ] Autocomplete.InvalidInput (14 ms)
+[ RUN      ] Autocomplete.ValidIInput
+[       OK ] Autocomplete.ValidIInput (14 ms)
+[----------] 2 tests from Autocomplete (29 ms total)
+
+[----------] 2 tests from GetPosition
+[ RUN      ] GetPosition.InvalidInput
+[       OK ] GetPosition.InvalidInput (11 ms)
+[ RUN      ] GetPosition.ValidInput
+[       OK ] GetPosition.ValidInput (11 ms)
+[----------] 2 tests from GetPosition (22 ms total)
+
+[----------] 4 tests from Dijkstra
+[ RUN      ] Dijkstra.InvalidInput
+[       OK ] Dijkstra.InvalidInput (11 ms)
+[ RUN      ] Dijkstra.ValidInput1
+[       OK ] Dijkstra.ValidInput1 (19 ms)
+[ RUN      ] Dijkstra.ValidInput2
+[       OK ] Dijkstra.ValidInput2 (15 ms)
+[ RUN      ] Dijkstra.ValidInput3
+[       OK ] Dijkstra.ValidInput3 (19 ms)
+[----------] 4 tests from Dijkstra (65 ms total)
+
+[----------] 4 tests from TSP
+[ RUN      ] TSP.InvalidInput
+[       OK ] TSP.InvalidInput (10 ms)
+[ RUN      ] TSP.ValidInput1
+[       OK ] TSP.ValidInput1 (10 ms)
+[ RUN      ] TSP.ValidInput2
+[       OK ] TSP.ValidInput2 (11 ms)
+[ RUN      ] TSP.ValidInput3
+[       OK ] TSP.ValidInput3 (149 ms)
+[----------] 4 tests from TSP (182 ms total)
+
+[----------] Global test environment tear-down
+[==========] 12 tests from 4 test suites ran. (300 ms total)
+[  PASSED  ] 12 tests.
+```
+

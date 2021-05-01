@@ -63,6 +63,7 @@ TrojanMap::TrojanMap() {
  */
 vector<string> TrojanMap::Autocomplete(string name) {
   vector<string> results;
+  if (name.empty()) return results;
   transform(name.begin(), name.end(), name.begin(), ::tolower);
   for (auto &pr : data) {
     string str;
@@ -91,12 +92,13 @@ string TrojanMap::GetID(const string &name) {
  * @return {pair<double,double>}  : (lat, lon)
  */
 pair<double, double> TrojanMap::GetPosition(const string &name) {
+  if (name.empty()) return make_pair(181, 91);
   for (auto &pr : data) {
     if (pr.second.name == name) {
       return make_pair(pr.second.lon, pr.second.lat);
     }
   }
-  return make_pair(0, 0);
+  return make_pair(181, 91);
 }
 
 /**
@@ -144,7 +146,7 @@ pair<double, vector<string>> TrojanMap::Dijkstra(string id1, string id2) {
   // q: <distance_from_id1_to_id, id>
   priority_queue<pair<double, string>, vector<pair<double, string>>, greater<pair<double, string>>> q;
   bool is_id2_visited = false;
-  if (id1 == "-1" || id2 == "-1") return make_pair(-1, path);
+  if (id1 == "" || id2 == "") return make_pair(-1, path);
 
   // initialization
   for (auto &pr : data) {

@@ -6,15 +6,15 @@
 #include "trojanmap.h"
 #include "ui_mainwindow.h"
 
-#define automobile false
-#define helicopter true
+#define CAR false
+#define UAV true
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
 
   ui->setupUi(this);
 
   ui->labelLogo->setScaledContents(true);
-  ui->labelLogo->setPixmap(QPixmap(":/logo.png"));
+  ui->labelLogo->setPixmap(QPixmap(":/img/logo.png"));
 
   QLabel *labelStatus = new QLabel(this);
   ui->statusbar->addWidget(labelStatus);
@@ -32,16 +32,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         "https://github.com/HaoxinMa/Trojan-Map";
     QMessageBox::information(this, "About", about_txt, QMessageBox::Close);
   });
-  ui->radioButtonAuto->setChecked(true);
+  ui->radioButtonCar->setChecked(true);
   ui->radioButtonBF->setChecked(true);
-  SwitchMode(automobile);
+  SwitchMode(CAR);
 
-  connect(ui->radioButtonAuto, &QRadioButton::clicked, [this]() {
-    if (ui->radioButtonAuto->isChecked()) SwitchMode(automobile);
+  connect(ui->radioButtonCar, &QRadioButton::clicked, [this]() {
+    if (ui->radioButtonCar->isChecked()) SwitchMode(CAR);
   });
 
-  connect(ui->radioButtonHeli, &QRadioButton::clicked, [this]() {
-    if (ui->radioButtonHeli->isChecked()) SwitchMode(helicopter);
+  connect(ui->radioButtonUav, &QRadioButton::clicked, [this]() {
+    if (ui->radioButtonUav->isChecked()) SwitchMode(UAV);
   });
 
   points.resize(7);
@@ -156,7 +156,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     TrojanMap x;
     path_points.clear();
 
-    if (ui->radioButtonAuto->isChecked()) {
+    if (ui->radioButtonCar->isChecked()) {
       string id1 = x.GetID(ui->lineEditFrom->text().toStdString());
       string id2 = x.GetID(ui->lineEditTo->text().toStdString());
       pair<double, vector<string>> pr = x.Dijkstra(id1, id2);
@@ -174,7 +174,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
       painter_type = PainterType::Dijkstra;
     }
 
-    if (ui->radioButtonHeli->isChecked()) {
+    if (ui->radioButtonUav->isChecked()) {
       vector<string> location_ids;
       if (!ui->lineEditFrom->text().isEmpty())
         location_ids.push_back((x.GetID(ui->lineEditFrom->text().toStdString())));
@@ -215,7 +215,7 @@ MainWindow::~MainWindow() { delete ui; }
 void MainWindow::paintEvent(QPaintEvent *) {
   QPainter painter(this);
   painter.translate(260, 0);
-  painter.drawPixmap(0, 0, QPixmap(":/map.jpg"));
+  painter.drawPixmap(0, 0, QPixmap(":/img/map.jpg"));
 
   QPen pen;
   pen.setColor(Qt::black);
@@ -237,8 +237,8 @@ void MainWindow::paintEvent(QPaintEvent *) {
       painter.drawPoint(ToQPoint(points[1]));
 
       // draw edges
-      pen.setWidth(5);
-      pen.setColor(Qt::darkGreen);
+      pen.setWidth(3);
+      pen.setColor(Qt::red);
       pen.setStyle(Qt::SolidLine);
       painter.setPen(pen);
       for (unsigned long i = 0; i < path_points.size() - 1; i++) {
@@ -259,8 +259,8 @@ void MainWindow::paintEvent(QPaintEvent *) {
       }
 
       // draw edges
-      pen.setWidth(5);
-      pen.setColor(Qt::darkGreen);
+      pen.setWidth(3);
+      pen.setColor(Qt::red);
       pen.setStyle(Qt::DashLine);
       painter.setPen(pen);
       for (unsigned long i = 0; i < path_points.size() - 1; i++) {
@@ -282,14 +282,14 @@ void MainWindow::paintEvent(QPaintEvent *) {
  */
 
 void MainWindow::SwitchMode(bool choice) {
-  ui->lineEditTo->setEnabled(choice == automobile);
-  if (choice == helicopter) ui->lineEditTo->setText("");
-  ui->lineEditVia1->setEnabled(choice == helicopter);
-  ui->lineEditVia2->setEnabled(choice == helicopter);
-  ui->lineEditVia3->setEnabled(choice == helicopter);
-  ui->lineEditVia4->setEnabled(choice == helicopter);
-  ui->lineEditVia5->setEnabled(choice == helicopter);
-  ui->groupTSP->setEnabled(choice == helicopter);
+  ui->lineEditTo->setEnabled(choice == CAR);
+  if (choice == UAV) ui->lineEditTo->setText("");
+  ui->lineEditVia1->setEnabled(choice == UAV);
+  ui->lineEditVia2->setEnabled(choice == UAV);
+  ui->lineEditVia3->setEnabled(choice == UAV);
+  ui->lineEditVia4->setEnabled(choice == UAV);
+  ui->lineEditVia5->setEnabled(choice == UAV);
+  ui->groupTSP->setEnabled(choice == UAV);
 }
 
 /**

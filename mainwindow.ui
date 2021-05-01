@@ -169,16 +169,16 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
-            <widget class="QRadioButton" name="radioButtonAuto">
+            <widget class="QRadioButton" name="radioButtonCar">
              <property name="text">
-              <string>Automobile</string>
+              <string>Car</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QRadioButton" name="radioButtonHeli">
+            <widget class="QRadioButton" name="radioButtonUav">
              <property name="text">
-              <string>Helicopter</string>
+              <string>UAV</string>
              </property>
             </widget>
            </item>

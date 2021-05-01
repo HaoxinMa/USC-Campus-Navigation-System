@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/">
-        <file>map.jpg</file>
         <file>map.csv</file>
-        <file>logo.png</file>
+        <file>img/logo.png</file>
+        <file>img/map.jpg</file>
     </qresource>
 </RCC>
