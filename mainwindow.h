@@ -22,6 +22,7 @@ class MainWindow : public QMainWindow {
   enum class PainterType { Points, TSP, Dijkstra };
   PainterType painter_type;
   vector<pair<double, double>> points, path_points;
+  vector<string> ids, path_ids;
   QString status_txt;
 
   MainWindow(QWidget *parent = nullptr);

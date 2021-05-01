@@ -44,7 +44,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     if (ui->radioButtonUav->isChecked()) SwitchMode(UAV);
   });
 
-  points.resize(7);
+  ids.resize(7);
 
   connect(ui->lineEditFrom, &QLineEdit::textChanged, ui->listWidget, [&]() {
     which_ctl_status_changed = 0;
@@ -142,8 +142,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         str = ui->lineEditVia5->text().toStdString();
         break;
     }
+    ids[which_ctl_status_changed] = x.GetID(str);
     auto pr = x.GetPosition(str);
-    points[which_ctl_status_changed] = pr;
     status_txt =
         QString::fromStdString(str) + " (" + QString::number(pr.first) + ", " + QString::number(pr.second) + ")";
     labelStatus->setText(status_txt);
@@ -154,7 +154,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   connect(ui->pushButton, &QPushButton::clicked, [=]() {
     TrojanMap x;
-    path_points.clear();
+    path_ids.clear();
 
     if (ui->radioButtonCar->isChecked()) {
       string id1 = x.GetID(ui->lineEditFrom->text().toStdString());
@@ -168,9 +168,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             "Distance: " + QString::number(pr.first) + " miles (" + QString::number(pr.first / 0.62137) + " km)";
         labelStatus->setText(status_txt);
       }
-      for (auto &id : pr.second) {
-        path_points.push_back(make_pair(x.data[id].lon, x.data[id].lat));
-      }
+      path_ids = pr.second;
       painter_type = PainterType::Dijkstra;
     }
 
@@ -201,9 +199,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
       if (ui->radioButton2Opt->isChecked()) pr = x.TSP_2opt(location_ids);
       status_txt = "Distance: " + QString::number(pr.first) + " miles (" + QString::number(pr.first / 0.62137) + " km)";
       labelStatus->setText(status_txt);
-      for (auto &id : pr.second[pr.second.size() - 1]) {
-        path_points.push_back(make_pair(x.data[id].lon, x.data[id].lat));
-      }
+      path_ids = (pr.second)[pr.second.size() - 1];
       painter_type = PainterType::TSP;
     }
     update();
@@ -213,6 +209,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 MainWindow::~MainWindow() { delete ui; }
 
 void MainWindow::paintEvent(QPaintEvent *) {
+  TrojanMap x;
   QPainter painter(this);
   painter.translate(260, 0);
   painter.drawPixmap(0, 0, QPixmap(":/img/map.jpg"));
@@ -223,62 +220,82 @@ void MainWindow::paintEvent(QPaintEvent *) {
   painter.setPen(pen);
 
   switch (painter_type) {
-    case PainterType::Points:
-      for (unsigned long i = 0; i < points.size(); i++) {
-        if (points[i].first != 0 && points[i].second != 0) {
-          painter.drawPoint(ToQPoint(points[i]));
+    case PainterType::Points: {
+      for (unsigned long i = 0; i < ids.size(); i++) {
+        if (ids[i] != "") {
+          auto pos = make_pair(x.data[ids[i]].lon, x.data[ids[i]].lat);
+          painter.drawPoint(ToQPoint(pos));                                              // draw the point
+          painter.drawText(ToQPoint(pos), QString::fromStdString(x.data[ids[i]].name));  // print the location name
         }
       }
       break;
+    }
 
-    case PainterType::Dijkstra:
-      // draw verticies
-      painter.drawPoint(ToQPoint(points[0]));
-      painter.drawPoint(ToQPoint(points[1]));
-
-      // draw edges
+    case PainterType::Dijkstra: {
+      // draw path
       pen.setWidth(3);
       pen.setColor(Qt::red);
       pen.setStyle(Qt::SolidLine);
       painter.setPen(pen);
-      for (unsigned long i = 0; i < path_points.size() - 1; i++) {
-        painter.drawLine(ToQPoint(path_points[i]), ToQPoint(path_points[i + 1]));
+      for (unsigned long i = 0; i < path_ids.size() - 1; i++) {
+        // the source point of current segment
+        auto point1 = make_pair(x.data[path_ids[i]].lon, x.data[path_ids[i]].lat);
+        // the destination point of current segment
+        auto point2 = make_pair(x.data[path_ids[i + 1]].lon, x.data[path_ids[i + 1]].lat);
+        painter.drawLine(ToQPoint(point1), ToQPoint(point2));  // draw the current segment
       }
 
-      // draw text
+      // draw the source and destination points and print their location names
       pen.setColor(Qt::black);
+      pen.setWidth(8);
       painter.setPen(pen);
-      painter.drawText(ToQPoint(points[0]), "FROM");
-      painter.drawText(ToQPoint(points[1]), "TO");
+      auto point1 = make_pair(x.data[ids[0]].lon, x.data[ids[0]].lat);  // the source point
+      auto point2 = make_pair(x.data[ids[1]].lon, x.data[ids[1]].lat);  // the destination point
+      painter.drawPoint(ToQPoint(point1));                              // draw the source point
+      painter.drawPoint(ToQPoint(point2));                              // draw the destination point
+      // print the source location name
+      painter.drawText(ToQPoint(point1), "From: " + QString::fromStdString(x.data[ids[0]].name));
+      // print the destination location name
+      painter.drawText(ToQPoint(point2), "To: " + QString::fromStdString(x.data[ids[1]].name));
       break;
+    }
 
-    case PainterType::TSP:
-      // draw verticies
-      for (unsigned long i = 0; i < path_points.size(); i++) {
-        painter.drawPoint(ToQPoint(path_points[i]));
-      }
-
-      // draw edges
+    case PainterType::TSP: {
+      // draw path
       pen.setWidth(3);
       pen.setColor(Qt::red);
-      pen.setStyle(Qt::DashLine);
+      pen.setStyle(Qt::DotLine);
       painter.setPen(pen);
-      for (unsigned long i = 0; i < path_points.size() - 1; i++) {
-        painter.drawLine(ToQPoint(path_points[i]), ToQPoint(path_points[i + 1]));
+      for (unsigned long i = 0; i < path_ids.size() - 1; i++) {
+        // the source point of current segment
+        auto point1 = make_pair(x.data[path_ids[i]].lon, x.data[path_ids[i]].lat);
+        // the destination point of current segment
+        auto point2 = make_pair(x.data[path_ids[i + 1]].lon, x.data[path_ids[i + 1]].lat);
+        painter.drawLine(ToQPoint(point1), ToQPoint(point2));  // draw the current segment
       }
 
-      // draw text
+      // draw points and print their location names
       pen.setColor(Qt::black);
+      pen.setWidth(8);
       painter.setPen(pen);
-      painter.drawText(ToQPoint(points[0]), "FROM/TO");
+      for (unsigned long i = 0; i < ids.size(); i++) {
+        painter.drawPoint(ToQPoint(make_pair(x.data[ids[i]].lon, x.data[ids[i]].lat)));
+        if (i == 0)
+          painter.drawText(ToQPoint(make_pair(x.data[ids[0]].lon, x.data[ids[0]].lat)),
+                           "From/To: " + QString::fromStdString(x.data[ids[0]].name));
+        else
+          painter.drawText(ToQPoint(make_pair(x.data[ids[i]].lon, x.data[ids[i]].lat)),
+                           QString::fromStdString(x.data[ids[i]].name));
+      }
       break;
+    }
   }
 }
 
 /**
  * SwitchMode: Set controls enabled/disabled according to mode choice
  *
- * @param  {bool} choice : 0: automobile, 1: helicopter
+ * @param  {bool} choice : 0 - CAR, 1 - UAV
  */
 
 void MainWindow::SwitchMode(bool choice) {
