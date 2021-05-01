@@ -118,7 +118,7 @@ vector<string> TrojanMap::Autocomplete(string name) {
 }
   ```
 
-Time complexity: `O(v * l)`, where v is the number of vertices (locations), l is the max length of a location name 
+Time complexity: `O(v*l)`, where v is the number of vertices (locations), l is the max length of a location name 
 
 ### Find Coordinates  
 
@@ -148,7 +148,7 @@ pair<double, vector<string>> Dijkstra(string id1, string id2); {
 }
   ```
 
-Time complexity: `O(v + e * log(e))`, where v is the number of vertices (locations), e is the number of edges (paths) 
+Time complexity: `O(v+e*log(e))`, where v is the number of vertices (locations), e is the number of edges (paths) 
 
 ### Traveling Salesman Problem (Brute-Force)
 
@@ -156,7 +156,7 @@ Time complexity: `O(v + e * log(e))`, where v is the number of vertices (locatio
 
 Solving TSP using brute-force is just like a permutation which is shown above.
 
-Time complexity: `O((v - 1)!)`, where v is the number of vertices (locations)
+Time complexity: `O((v-1)!)`, where v is the number of vertices (locations)
 
 ### Traveling Salesman Problem (2-opt Heuristic)
 
@@ -166,11 +166,11 @@ Time complexity: `O(v^2)`, where v is the number of vertices (locations)
 
 ## Output Preview
 
-  ### Car path planning using Dijkstra Algorithm
+  ### Car Path Planning Using Dijkstra Algorithm
 
   ###  ![Dijkstra_GUI](./img/Dijkstra_GUI.png)
 
-  ### Unmanned Aerial Vehicle (UAV) path planning (TSP) using Brute-force  
+  ### Unmanned Aerial Vehicle (UAV) Path Planning Using Brute-Force  
 
   ### ![2opt_GUI](/home/haoxin/code/TrojanMap/qt/TrojanMap/img/2opt_GUI.png)
 
