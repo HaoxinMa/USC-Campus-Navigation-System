@@ -55,13 +55,13 @@ id,lat,lon,name,neighbor
 
 `gtest.cpp` is the source file for unit testing using Google Test
 
-`.\googletest` is the folder storing a clone from repository https://github.com/google/googletest
+`./googletest` is the folder storing a clone from repository https://github.com/google/googletest
 
-`gtest_dependency.pri` is the Qt Project Include File specifying Google Test configurations (you should move this file into `.\googletest` after cloning the repository)
+`gtest_dependency.pri` is the Qt Project Include File specifying Google Test configurations (you should move this file into `./googletest` after cloning the repository)
 
 `resource.qrc` is the Qt Resource File managing images and `map.csv`
 
-`.\img` is the folder for images
+`./img` is the folder for images
 
 `map.csv` stores the information of each `Node` 
 
@@ -180,7 +180,7 @@ Use Google Test for unit testing in `gtest.cpp`
 
 Here is the output in terminal if everything is ok.
 
-```shell
+```
 [==========] Running 12 tests from 4 test suites.
 [----------] Global test environment set-up.
 [----------] 2 tests from Autocomplete

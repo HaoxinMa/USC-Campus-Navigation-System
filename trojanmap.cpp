@@ -77,6 +77,7 @@ vector<string> TrojanMap::Autocomplete(string name) {
 }
 
 string TrojanMap::GetID(const string &name) {
+  if (name.empty()) return "";
   for (auto &pr : data) {
     if (pr.second.name == name) {
       return pr.first;

@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 
+#include <QDebug>
 #include <QMessageBox>
 #include <QPainter>
 
@@ -10,6 +11,7 @@
 #define UAV true
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
+  ids.resize(7);
 
   ui->setupUi(this);
 
@@ -38,13 +40,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   connect(ui->radioButtonCar, &QRadioButton::clicked, [this]() {
     if (ui->radioButtonCar->isChecked()) SwitchMode(CAR);
+    path_ids.clear();
+    // fill(path_ids.begin(), path_ids.end(), 0);
   });
 
   connect(ui->radioButtonUav, &QRadioButton::clicked, [this]() {
     if (ui->radioButtonUav->isChecked()) SwitchMode(UAV);
+    path_ids.clear();
+    // fill(path_ids.begin(), path_ids.end(), 0);
   });
-
-  ids.resize(7);
 
   connect(ui->lineEditFrom, &QLineEdit::textChanged, ui->listWidget, [&]() {
     which_ctl_status_changed = 0;
@@ -110,6 +114,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   });
 
   connect(ui->listWidget, &QListWidget::itemClicked, [this, labelStatus](QListWidgetItem *item) {
+    
     TrojanMap x;
     string str;
     switch (which_ctl_status_changed) {
@@ -159,6 +164,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     if (ui->radioButtonCar->isChecked()) {
       string id1 = x.GetID(ui->lineEditFrom->text().toStdString());
       string id2 = x.GetID(ui->lineEditTo->text().toStdString());
+      if (id1 == "") {
+        QMessageBox::warning(this, "Warning", "Please choose a starting point");
+        return;
+      }
+      if (id2 == "") {
+        QMessageBox::warning(this, "Warning", "Please choose a ending point");
+        return;
+      }
       pair<double, vector<string>> pr = x.Dijkstra(id1, id2);
       if (pr.first == -1) {
         QMessageBox::warning(this, "Warning", "Sorry. Due to our limited map data, no path is found.");
@@ -177,7 +190,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
       if (!ui->lineEditFrom->text().isEmpty())
         location_ids.push_back((x.GetID(ui->lineEditFrom->text().toStdString())));
       else {
-        QMessageBox::warning(this, "Warning", "Please input a starting point");
+        QMessageBox::warning(this, "Warning", "Please choose a starting point");
         return;
       }
       if (!ui->lineEditVia1->text().isEmpty())
@@ -213,6 +226,7 @@ void MainWindow::paintEvent(QPaintEvent *) {
   QPainter painter(this);
   painter.translate(260, 0);
   painter.drawPixmap(0, 0, QPixmap(":/img/map.jpg"));
+  painter.setRenderHint(QPainter::Antialiasing);
 
   QPen pen;
   pen.setColor(Qt::black);
@@ -222,6 +236,7 @@ void MainWindow::paintEvent(QPaintEvent *) {
   switch (painter_type) {
     case PainterType::Points: {
       for (unsigned long i = 0; i < ids.size(); i++) {
+        if (ui->radioButtonUav->isChecked() && i == 1) continue;
         if (ids[i] != "") {
           auto pos = make_pair(x.data[ids[i]].lon, x.data[ids[i]].lat);
           painter.drawPoint(ToQPoint(pos));                                              // draw the point
@@ -232,6 +247,7 @@ void MainWindow::paintEvent(QPaintEvent *) {
     }
 
     case PainterType::Dijkstra: {
+      if (path_ids.empty()) break;
       // draw path
       pen.setWidth(3);
       pen.setColor(Qt::red);
@@ -253,14 +269,14 @@ void MainWindow::paintEvent(QPaintEvent *) {
       auto point2 = make_pair(x.data[ids[1]].lon, x.data[ids[1]].lat);  // the destination point
       painter.drawPoint(ToQPoint(point1));                              // draw the source point
       painter.drawPoint(ToQPoint(point2));                              // draw the destination point
-      // print the source location name
+      // print the source and the destination location name
       painter.drawText(ToQPoint(point1), "From: " + QString::fromStdString(x.data[ids[0]].name));
-      // print the destination location name
       painter.drawText(ToQPoint(point2), "To: " + QString::fromStdString(x.data[ids[1]].name));
       break;
     }
 
     case PainterType::TSP: {
+      if (path_ids.empty()) break;
       // draw path
       pen.setWidth(3);
       pen.setColor(Qt::red);
@@ -274,12 +290,16 @@ void MainWindow::paintEvent(QPaintEvent *) {
         painter.drawLine(ToQPoint(point1), ToQPoint(point2));  // draw the current segment
       }
 
-      // draw points and print their location names
       pen.setColor(Qt::black);
       pen.setWidth(8);
       painter.setPen(pen);
       for (unsigned long i = 0; i < ids.size(); i++) {
+        if (i == 1) continue;  // ids[1] is the destination of Dijkstra function
+
+        // draw points
         painter.drawPoint(ToQPoint(make_pair(x.data[ids[i]].lon, x.data[ids[i]].lat)));
+
+        // print location names
         if (i == 0)
           painter.drawText(ToQPoint(make_pair(x.data[ids[0]].lon, x.data[ids[0]].lat)),
                            "From/To: " + QString::fromStdString(x.data[ids[0]].name));
@@ -300,7 +320,7 @@ void MainWindow::paintEvent(QPaintEvent *) {
 
 void MainWindow::SwitchMode(bool choice) {
   ui->lineEditTo->setEnabled(choice == CAR);
-  if (choice == UAV) ui->lineEditTo->setText("");
+  // if (choice == UAV) ui->lineEditTo->setText("");
   ui->lineEditVia1->setEnabled(choice == UAV);
   ui->lineEditVia2->setEnabled(choice == UAV);
   ui->lineEditVia3->setEnabled(choice == UAV);
